@@ -3,23 +3,28 @@ import './App.css';
 
 function App() {
   // State to hold the data
-  const [data, setData] = useState(null);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch data from the backend when the component is mounted
   useEffect(() => {
-    // Make a GET request to your Express backend
-    fetch('http://localhost:3000/api/data') // Your backend URL
-      .then(response => response.json()) // Parse the JSON response
-      .then(data => {
-        setData(data); // Update state with the fetched data
-        setLoading(false); // Set loading to false
-      })
-      .catch((error) => {
-        console.error('Error fetching data:', error);
-        setLoading(false); // Set loading to false even if there's an error
-      });
-  }, []); // Empty dependency array means this runs only once when the component mounts
+    console.log("Sending IPC message to fetch users");
+    window.electron.ipcRenderer.send('fetch-users');
+
+    window.electron.ipcRenderer.on('users-data', (event, data) => {
+      if (data.error) {
+        console.error('Error fetching users:', data.error);
+      } else {
+        console.log("Received users data:", data);
+        setUsers(data);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      window.electron.ipcRenderer.removeAllListeners('users-data');
+    };
+  }, []);
 
   return (
     <div className="App">
@@ -29,7 +34,11 @@ function App() {
       ) : (
         <div>
           <h2>Data from Express Backend:</h2>
-          <pre>{JSON.stringify(data, null, 2)}</pre> {/* Display the data */}
+          <ul>
+            {users.map(user => (
+              <li key={user.id}>{user.name} - {user.email}</li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
