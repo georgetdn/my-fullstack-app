@@ -2,7 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const path = require('path');
 
+// Serve static frontend files
+app.use(express.static(path.join(__dirname, '../dist/frontend')));
 const app = express();
 app.use(express.json()); // Middleware to parse JSON requests
 app.use(cors()); // Enable CORS for frontend communication
