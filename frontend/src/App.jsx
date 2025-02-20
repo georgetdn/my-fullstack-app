@@ -9,21 +9,25 @@ function App() {
   // Fetch data from the backend when the component is mounted
   useEffect(() => {
     console.log("Sending IPC message to fetch users");
-    window.electron.ipcRenderer.send('fetch-users');
-
-    window.electron.ipcRenderer.on('users-data', (event, response) => {
-      if (response.error) {
-        console.error('Error fetching users:', response.error);
+    window.electron.ipcRenderer.invoke('fetch-users')
+      .then(response => {
+        console.log("Received IPC response:", response);
+        if (!response) {
+          console.error('No response received');
+          setLoading(false); // Set loading to false if there is no response
+        } else {
+          console.log("Received users data:", response);
+          setUsers(response);
+          setLoading(false); // Set loading to false after data is received
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching users:', error);
         setLoading(false); // Set loading to false if there is an error
-      } else {
-        console.log("Received users data:", response.data);
-        setUsers(response.data);
-        setLoading(false); // Set loading to false after data is received
-      }
-    });
+      });
 
     return () => {
-      window.electron.ipcRenderer.removeAllListeners('users-data');
+      window.electron.ipcRenderer.removeAllListeners('fetch-users');
     };
   }, []);
 
@@ -36,9 +40,13 @@ function App() {
         <div>
           <h2>Data from Express Backend:</h2>
           <ul>
-            {users.map(user => (
-              <li key={user.id}>{user.name} - {user.email}</li>
-            ))}
+            {users.length > 0 ? (
+              users.map(user => (
+                <li key={user.id}>{user.name} - {user.email}</li>
+              ))
+            ) : (
+              <p>No users found</p>
+            )}
           </ul>
         </div>
       )}

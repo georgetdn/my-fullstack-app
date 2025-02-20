@@ -60,7 +60,7 @@ app.on("ready", () => {
         );
     });
 
-    // Start the Express server
+    // Start the Express server internally
     server = app.listen(0, () => {
         console.log(`Server is running internally`);
     });
@@ -91,16 +91,18 @@ app.on("ready", () => {
     });
 
     // IPC handlers
-    ipcMain.on('fetch-users', (event) => {
+    ipcMain.handle('fetch-users', async () => {
         console.log("Received IPC message to fetch users");
-        db.query("SELECT * FROM users", (err, results) => {
-            if (err) {
-                console.error("Error fetching users:", err);
-                event.reply('users-data', { error: err.message });
-            } else {
-                console.log("Fetched users data:", results);
-                event.reply('users-data', { data: results });
-            }
+        return new Promise((resolve, reject) => {
+            db.query("SELECT * FROM users", (err, results) => {
+                if (err) {
+                    console.error("Error fetching users:", err);
+                    reject(err);
+                } else {
+                    console.log("Fetched users data:", results);
+                    resolve(results);
+                }
+            });
         });
     });
 });
