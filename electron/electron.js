@@ -4,6 +4,7 @@ const express = require("express");
 const mysql = require("mysql2");
 
 let mainWindow;
+let db;
 let server;
 
 app.commandLine.appendSwitch("disable-gpu");
@@ -12,13 +13,8 @@ app.disableHardwareAcceleration();
 app.on("ready", () => {
     console.log("Starting Electron...");
 
-    // Create the Express server
-    server = express();
-    server.use(express.json());
-    server.use(require("cors")());
-
     // MySQL connection setup
-    const db = mysql.createConnection({
+    db = mysql.createConnection({
         host: "localhost",
         user: "georged",
         password: "W3Se$Xdr%geor",
@@ -34,8 +30,12 @@ app.on("ready", () => {
         console.log("Connected to MySQL database.");
     });
 
+    // Create the Express server
+    const app = express();
+    app.use(express.json());
+
     // API Routes
-    server.get("/api/users", (req, res) => {
+    app.get("/api/users", (req, res) => {
         db.query("SELECT * FROM users", (err, results) => {
             if (err) {
                 res.status(500).json({ error: err.message });
@@ -45,7 +45,7 @@ app.on("ready", () => {
         });
     });
 
-    server.post("/users", (req, res) => {
+    app.post("/users", (req, res) => {
         const { name, email } = req.body;
         db.query(
             "INSERT INTO users (name, email) VALUES (?, ?)",
@@ -60,13 +60,9 @@ app.on("ready", () => {
         );
     });
 
-    // Serve the frontend files
-    server.use(express.static(path.join(__dirname, "../dist/frontend")));
-
     // Start the Express server
-    const PORT = 3000;
-    server.listen(PORT, () => {
-        console.log(`Server is running internally on port ${PORT}`);
+    server = app.listen(0, () => {
+        console.log(`Server is running internally`);
     });
 
     // Create the Electron main window
@@ -80,8 +76,10 @@ app.on("ready", () => {
         },
     });
 
-    // Load the frontend files directly from the Express server
-    mainWindow.loadURL(`http://localhost:${PORT}/index.html`)
+    // Load the frontend files directly from the file system
+    const frontendPath = path.join(__dirname, '../dist/frontend/index.html');
+    console.log(`Loading frontend from ${frontendPath}`);
+    mainWindow.loadFile(frontendPath)
         .then(() => {
             console.log("Frontend loaded successfully");
             mainWindow.webContents.openDevTools(); // Open developer tools
@@ -101,7 +99,7 @@ app.on("ready", () => {
                 event.reply('users-data', { error: err.message });
             } else {
                 console.log("Fetched users data:", results);
-                event.reply('users-data', results);
+                event.reply('users-data', { data: results });
             }
         });
     });
@@ -125,6 +123,16 @@ function stopServer() {
         console.log("Stopping backend server...");
         server.close(() => {
             console.log("Backend server stopped.");
+        });
+    }
+    if (db) {
+        console.log("Closing database connection...");
+        db.end((err) => {
+            if (err) {
+                console.error("Error closing database connection:", err);
+            } else {
+                console.log("Database connection closed.");
+            }
         });
     }
 }

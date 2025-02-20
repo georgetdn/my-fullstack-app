@@ -11,14 +11,15 @@ function App() {
     console.log("Sending IPC message to fetch users");
     window.electron.ipcRenderer.send('fetch-users');
 
-    window.electron.ipcRenderer.on('users-data', (event, data) => {
-      if (data.error) {
-        console.error('Error fetching users:', data.error);
+    window.electron.ipcRenderer.on('users-data', (event, response) => {
+      if (response.error) {
+        console.error('Error fetching users:', response.error);
+        setLoading(false); // Set loading to false if there is an error
       } else {
-        console.log("Received users data:", data);
-        setUsers(data);
+        console.log("Received users data:", response.data);
+        setUsers(response.data);
+        setLoading(false); // Set loading to false after data is received
       }
-      setLoading(false);
     });
 
     return () => {
