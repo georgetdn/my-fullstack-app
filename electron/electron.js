@@ -7,9 +7,6 @@ let mainWindow;
 let db;
 let server;
 
-app.commandLine.appendSwitch("disable-gpu");
-app.disableHardwareAcceleration();
-
 app.on("ready", () => {
     console.log("Starting Electron...");
 
@@ -76,13 +73,15 @@ app.on("ready", () => {
         },
     });
 
+    // Hide the default menu
+    mainWindow.removeMenu();
+
     // Load the frontend files directly from the file system
     const frontendPath = path.join(__dirname, '../dist/frontend/index.html');
     console.log(`Loading frontend from ${frontendPath}`);
     mainWindow.loadFile(frontendPath)
         .then(() => {
             console.log("Frontend loaded successfully");
-            mainWindow.webContents.openDevTools(); // Open developer tools
         })
         .catch((err) => console.error("Error loading frontend:", err));
 
